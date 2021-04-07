@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "esp_wifi.h"
+//#include "../components/esp_wifi/include/esp_wifi.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
@@ -42,6 +43,7 @@
 
 static const char *TAG = "MQTT_EXAMPLE";
 
+float tempera [4] = { 0 };
 
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
@@ -122,7 +124,7 @@ static void OneWireOp(void){
     OneWireBus_SearchState search_state = {0};
     bool found = false;
     owb_search_first(owb, &search_state, &found);
-    /*while (found)
+    while (found)
     {
         char rom_code_s[17];
         owb_string_from_rom_code(search_state.rom_code, rom_code_s, sizeof(rom_code_s));
@@ -130,8 +132,8 @@ static void OneWireOp(void){
         device_rom_codes[num_devices] = search_state.rom_code;
         ++num_devices;
         owb_search_next(owb, &search_state, &found);
-    }*/
-    //printf("Found %d device%s\n", num_devices, num_devices == 1 ? "" : "s");
+    }
+    printf("Found %d device%s\n", num_devices, num_devices == 1 ? "" : "s");
 
     // In this example, if a single device is present, then the ROM code is probably
     // not very interesting, so just print it out. If there are multiple devices,
@@ -207,8 +209,8 @@ static void OneWireOp(void){
     {
         TickType_t last_wake_time = xTaskGetTickCount();
 
-        while (1)
-        {
+        //while (1)
+        //{
             ds18b20_convert_all(owb);
 
             // In this application all devices use the same resolution,
@@ -223,6 +225,7 @@ static void OneWireOp(void){
             for (int i = 0; i < num_devices; ++i)
             {
                 errors[i] = ds18b20_read_temp(devices[i], &readings[i]);
+                tempera[i] = readings[i];
             }
 
             // Print results in a separate loop, after all have been read
@@ -236,9 +239,10 @@ static void OneWireOp(void){
 
                 printf("  %d: %.1f    %d errors\n", i, readings[i], errors_count[i]);
             }
+            //return readings[1];
 
-            vTaskDelayUntil(&last_wake_time, SAMPLE_PERIOD / portTICK_PERIOD_MS);
-        }
+            //vTaskDelay(pdMS_TO_TICKS(25000)); // wait 25 seconds
+        //}
     }
     else
     {
@@ -280,17 +284,21 @@ static void mqtt_app_start(void)
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
     char topic[128];
+    char medic[128];
 
     // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
+    sprintf(medic, "field1=%.3f", tempera[1]);
 
     // Using FreeRTOS task management, forever loop, and send state to the topic
     for (;;)
     {
+        OneWireOp(); 
+        sprintf(medic, "field1=%.3f", tempera[0]);
         // You may change or update the state data that's being reported to Losant here:
-        esp_mqtt_client_publish(client, topic, "field1=18", 0, 0, 0);
+        esp_mqtt_client_publish(client, topic, medic, 0, 0, 0);
 
-        vTaskDelay(pdMS_TO_TICKS(90000)); // wait 30 seconds
+        vTaskDelay(pdMS_TO_TICKS(30000)); // wait 30 seconds
     }
 }
 
@@ -298,9 +306,12 @@ void sendMessage(void *pvParameters){
     esp_mqtt_client_handle_t client = *((esp_mqtt_client_handle_t *)pvParameters);
     // create topic variable
     char topic[128];
+    char medic[128];
 
     // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
+
+    sprintf(medic, "field1=%.3f", tempera[0]);
 
     // Using FreeRTOS task management, forever loop, and send state to the topic
     /*for (;;)
@@ -335,6 +346,8 @@ void app_main(void)
      * examples/protocols/README.md for more information about this function.
      */
     ESP_ERROR_CHECK(example_connect());
+
+    //OneWireOp();
 
     mqtt_app_start();
     //sendMessage();

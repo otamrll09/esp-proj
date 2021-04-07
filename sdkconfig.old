@@ -123,15 +123,22 @@ CONFIG_PARTITION_TABLE_MD5=y
 #
 # Example Configuration
 #
-CONFIG_BROKER_URL="mqtt://mqtt.thingspeak.com"
+CONFIG_BROKER_URL="mqtt://mqtt.eclipse.org"
 # end of Example Configuration
+
+#
+# esp32-ds18b20-example Configuration
+#
+CONFIG_ONE_WIRE_GPIO=4
+# CONFIG_ENABLE_STRONG_PULLUP_GPIO is not set
+# end of esp32-ds18b20-example Configuration
 
 #
 # Example Connection Configuration
 #
 CONFIG_EXAMPLE_CONNECT_WIFI=y
-CONFIG_EXAMPLE_WIFI_SSID="Somebody"
-CONFIG_EXAMPLE_WIFI_PASSWORD="metacore"
+CONFIG_EXAMPLE_WIFI_SSID="dlink-NET_2G87CC8E"
+CONFIG_EXAMPLE_WIFI_PASSWORD="umhmj93638"
 # CONFIG_EXAMPLE_CONNECT_ETHERNET is not set
 CONFIG_EXAMPLE_CONNECT_IPV6=y
 CONFIG_EXAMPLE_CONNECT_IPV6_PREF_LOCAL_LINK=y

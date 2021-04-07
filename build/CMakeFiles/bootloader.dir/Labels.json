@@ -2,34 +2,34 @@
 	"sources" : 
 	[
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader-complete.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader-complete.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
 		},
 		{
-			"file" : "C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+			"file" : "E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
 		}
 	],
 	"target" : 

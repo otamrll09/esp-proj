@@ -1,13 +1,13 @@
 # Target labels
  bootloader
 # Source files and their labels
-C:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader
-C:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader-complete.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
-C:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader
+E:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/CMakeFiles/bootloader-complete.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+E:/esp/esp-idf/Projetos/esp-proj/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
