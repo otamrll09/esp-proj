@@ -1680,6 +1680,48 @@
     {
         "children": [
             {
+                "children": [],
+                "depends_on": null,
+                "help": "GPIO number (IOxx) to access One Wire Bus.\n\nSome GPIOs are used for other purposes (flash connections, etc.) and cannot be used.\n\nGPIOs 34-39 are input-only so cannot be used to drive the One Wire Bus.",
+                "id": "ONE_WIRE_GPIO",
+                "name": "ONE_WIRE_GPIO",
+                "range": [
+                    0,
+                    33
+                ],
+                "title": "OneWire GPIO number",
+                "type": "int"
+            },
+            {
+                "children": [
+                    {
+                        "children": [],
+                        "depends_on": "ENABLE_STRONG_PULLUP_GPIO",
+                        "help": "GPIO number (IOxx) to control the strong pull-up on the One Wire Bus, perhaps\nvia a P-channel MOSFET between VCC and the One Wire Bus data line.\n\nThis GPIO will be set as an output and driven high during temperature conversion.\nThis would enable the MOSFET providing current to the devices.\n\nAt all other times it will be driven low, switching off the MOSFET and allowing\nthe One Wire Bus to operate normally.\n\nSome GPIOs are used for other purposes (flash connections, etc.) and cannot be used.\n\nGPIOs 34-39 are input-only so cannot be used to drive the One Wire Bus.",
+                        "id": "STRONG_PULLUP_GPIO",
+                        "name": "STRONG_PULLUP_GPIO",
+                        "range": null,
+                        "title": "Strong pull-up GPIO number",
+                        "type": "int"
+                    }
+                ],
+                "depends_on": null,
+                "help": "An external circuit can be used to provide a strong pull-up to the One Wire Bus.\nThis is useful when the bus has parasitic-powered devices and extra current is\nrequired to power them, such as during temperature ADC conversions.\n\nAn example of such a circuit for the ESP32 is a P-channel MOSFET (such as the BS250)\nconnected Source-to-Drain between a current-limiting resistor (e.g. 270ohm for 12mA\nmax at 3.3V), itself connected to VCC, and the One Wire Bus data line. The Gate is\nconnected to the GPIO specified here.",
+                "id": "ENABLE_STRONG_PULLUP_GPIO",
+                "name": "ENABLE_STRONG_PULLUP_GPIO",
+                "range": null,
+                "title": "Enable strong pull-up controlled by GPIO (MOSFET)",
+                "type": "bool"
+            }
+        ],
+        "depends_on": null,
+        "id": "esp32-ds18b20-example-configuration",
+        "title": "esp32-ds18b20-example Configuration",
+        "type": "menu"
+    },
+    {
+        "children": [
+            {
                 "children": [
                     {
                         "children": [],

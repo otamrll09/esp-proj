@@ -127,6 +127,13 @@ CONFIG_BROKER_URL="mqtt://mqtt.thingspeak.com"
 # end of Example Configuration
 
 #
+# esp32-ds18b20-example Configuration
+#
+CONFIG_ONE_WIRE_GPIO=4
+# CONFIG_ENABLE_STRONG_PULLUP_GPIO is not set
+# end of esp32-ds18b20-example Configuration
+
+#
 # Example Connection Configuration
 #
 CONFIG_EXAMPLE_CONNECT_WIFI=y
