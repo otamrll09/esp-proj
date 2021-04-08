@@ -241,7 +241,7 @@ static void OneWireOp(void){
             }
             //return readings[1];
 
-            //vTaskDelay(pdMS_TO_TICKS(25000)); // wait 25 seconds
+            vTaskDelay(pdMS_TO_TICKS(1000)); // wait 1 seconds
         //}
     }
     else
@@ -291,15 +291,15 @@ static void mqtt_app_start(void)
     sprintf(medic, "field1=%.3f", tempera[1]);
 
     // Using FreeRTOS task management, forever loop, and send state to the topic
-    for (;;)
-    {
+    //for (;;)
+    //{
         OneWireOp(); 
         sprintf(medic, "field1=%.3f", tempera[0]);
         // You may change or update the state data that's being reported to Losant here:
         esp_mqtt_client_publish(client, topic, medic, 0, 0, 0);
 
-        vTaskDelay(pdMS_TO_TICKS(30000)); // wait 30 seconds
-    }
+        //vTaskDelay(pdMS_TO_TICKS(90000)); // wait 90 seconds
+    //}
 }
 
 void sendMessage(void *pvParameters){
@@ -348,7 +348,13 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
 
     //OneWireOp();
+    while (1)
+    {
+        mqtt_app_start();
+        vTaskDelay(pdMS_TO_TICKS(90000));
+    }
+    
 
-    mqtt_app_start();
+    
     //sendMessage();
 }

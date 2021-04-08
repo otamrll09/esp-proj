@@ -1,4 +1,4 @@
-# Install script for directory: E:/esp/esp-idf/components/soc/soc
+# Install script for directory: C:/esp/esp-idf/components/soc/soc
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,7 +34,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("E:/esp/esp-idf/Projetos/esp-proj/build/esp-idf/soc/soc/esp32/cmake_install.cmake")
+  include("C:/esp/esp-idf/Projetos/esp-proj/build/esp-idf/soc/soc/esp32/cmake_install.cmake")
 
 endif()
 

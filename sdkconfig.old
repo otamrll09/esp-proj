@@ -123,13 +123,13 @@ CONFIG_PARTITION_TABLE_MD5=y
 #
 # Example Configuration
 #
-CONFIG_BROKER_URL="mqtt://mqtt.eclipse.org"
+CONFIG_BROKER_URL="mqtt://mqtt.thingspeak.com"
 # end of Example Configuration
 
 #
 # esp32-ds18b20-example Configuration
 #
-CONFIG_ONE_WIRE_GPIO=4
+CONFIG_ONE_WIRE_GPIO=15
 # CONFIG_ENABLE_STRONG_PULLUP_GPIO is not set
 # end of esp32-ds18b20-example Configuration
 

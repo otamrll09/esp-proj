@@ -1,4 +1,4 @@
-# Install script for directory: E:/esp/esp-idf/Projetos/esp-proj/components/esp32-ds18b20
+# Install script for directory: C:/esp/esp-idf/Projetos/esp-proj/components/esp32-ds18b20
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
