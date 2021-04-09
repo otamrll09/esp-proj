@@ -100,9 +100,87 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     mqtt_event_handler_cb(event_data);
 }
 
+typedef struct Salvavidas
+{
+    OneWireBus * cara;
+    int disp_loc;
+    DS18B20_Info * orb[MAX_DEVICES];
+};
+
+QueueHandle_t xQueueSensorInfo;
+QueueHandle_t xQueueMedBruta;
+
+void LeituraDS18B20(void * pvParameters)
+{
+    
+    int num_devices2;
+    DS18B20_Info * bota[MAX_DEVICES] = {0};
+    
+    struct Salvavidas * pvParametrics;
+
+    xQueueReceive(xQueueSensorInfo, &(pvParametrics),5000);
+    num_devices2 = pvParametrics->disp_loc;
+        
+     for (int i = 0; i < num_devices2; ++i)
+    {
+        bota[i] = pvParametrics->orb[i];
+    }
+    // Read temperatures more efficiently by starting conversions on all devices at the same time
+    int errors_count2[MAX_DEVICES] = {0};
+    int sample_count2 = 0;
+    if (num_devices2 > 0)
+    {
+        OneWireBus * owb2;
+        owb2 = pvParametrics->cara;
+
+        while (1)
+        {
+            ds18b20_convert_all(owb2);
+
+            // In this application all devices use the same resolution,
+            // so use the first device to determine the delay
+            ds18b20_wait_for_conversion(bota[0]);
+
+            // Read the results immediately after conversion otherwise it may fail
+            // (using printf before reading may take too long)
+            float readings2[MAX_DEVICES] = { 0 };
+            DS18B20_ERROR errors2[MAX_DEVICES] = { 0 };
+
+            for (int i = 0; i < num_devices2; ++i)
+            {
+                errors2[i] = ds18b20_read_temp(bota[i], &readings2[i]);
+                //tempera[i] = readings2[i];
+                xQueueSend(xQueueMedBruta, (void*) &readings2[0], pdMS_TO_TICKS(5000) );
+            }
+
+            // Print results in a separate loop, after all have been read
+            printf("\nTemperature readings (degrees C): sample %d\n", ++sample_count2);
+            for (int i = 0; i < num_devices2; ++i)
+            {
+                if (errors2[i] != DS18B20_OK)
+                {
+                    ++errors_count2[i];
+                }
+
+                printf("  %d: %.1f    %d errors\n", i, readings2[i], errors_count2[i]);
+            }
+            //return readings[1];
+
+            vTaskDelay(pdMS_TO_TICKS(100)); // wait 100ms
+        }
+    }
+    else
+    {
+        printf("\nNo DS18B20 devices detected!\n");
+    }
+
+}
+
 static void OneWireOp(void){
     // Override global log level
     esp_log_level_set("*", ESP_LOG_INFO);
+
+    struct Salvavidas salvador;
 
     // To debug, use 'make menuconfig' to set default Log level to DEBUG, then uncomment:
     //esp_log_level_set("owb", ESP_LOG_DEBUG);
@@ -135,6 +213,8 @@ static void OneWireOp(void){
     }
     printf("Found %d device%s\n", num_devices, num_devices == 1 ? "" : "s");
 
+    salvador.disp_loc = num_devices;
+
     // In this example, if a single device is present, then the ROM code is probably
     // not very interesting, so just print it out. If there are multiple devices,
     // then it may be useful to check that a specific device is present.
@@ -159,6 +239,7 @@ static void OneWireOp(void){
     {
         DS18B20_Info * ds18b20_info = ds18b20_malloc();  // heap allocation
         devices[i] = ds18b20_info;
+        salvador.orb[i] = devices[i];
 
         if (num_devices == 1)
         {
@@ -202,12 +283,20 @@ static void OneWireOp(void){
     owb_use_strong_pullup_gpio(owb, CONFIG_STRONG_PULLUP_GPIO);
 #endif
 
-    // Read temperatures more efficiently by starting conversions on all devices at the same time
+    salvador.cara = owb;
+    struct Salvavidas *prttask = &salvador;
+
+    
+
+    xTaskCreate(LeituraDS18B20, "DS18B20L", 1000, (void*) prttask, 1, NULL);
+    xQueueSend(xQueueSensorInfo, (void*) &salvador, pdMS_TO_TICKS(5000) );
+
+    /*// Read temperatures more efficiently by starting conversions on all devices at the same time
     int errors_count[MAX_DEVICES] = {0};
     int sample_count = 0;
     if (num_devices > 0)
     {
-        TickType_t last_wake_time = xTaskGetTickCount();
+        
 
         //while (1)
         //{
@@ -247,6 +336,33 @@ static void OneWireOp(void){
     else
     {
         printf("\nNo DS18B20 devices detected!\n");
+    }*/
+}
+
+void sendMessage(void *pvParameters)
+{
+    esp_mqtt_client_handle_t client = *((esp_mqtt_client_handle_t *)pvParameters);
+    // create topic variable
+    char topic[128];
+    char medic[128];
+    float brut[MAX_DEVICES] = {0};
+    TickType_t last_wake_time = xTaskGetTickCount();
+
+    // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
+    sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
+
+    //sprintf(medic, "field1=%.3f", brut[0]);
+    
+
+    // Using FreeRTOS task management, forever loop, and send state to the topic
+    for (;;)
+    {
+        xQueueReceive(xQueueMedBruta, &(brut),5000);
+        sprintf(medic, "field1=%.3f", brut[0]);
+        // You may change or update the state data that's being reported to Losant here:
+        esp_mqtt_client_publish(client, topic, medic, 0, 0, 0);
+
+        vTaskDelayUntil(&last_wake_time,pdMS_TO_TICKS(90000)); //sincronizando periodo de 90s
     }
 }
 
@@ -283,14 +399,16 @@ static void mqtt_app_start(void)
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
-    char topic[128];
-    char medic[128];
+    //char topic[128];
+    //char medic[128];
 
-    // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
+    xTaskCreate(sendMessage, "Mqttmssg", 3000, (void*)client, 2, NULL);
+
+    /*/ Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
     sprintf(medic, "field1=%.3f", tempera[1]);
 
-    // Using FreeRTOS task management, forever loop, and send state to the topic
+     Using FreeRTOS task management, forever loop, and send state to the topic
     //for (;;)
     //{
         OneWireOp(); 
@@ -299,28 +417,7 @@ static void mqtt_app_start(void)
         esp_mqtt_client_publish(client, topic, medic, 0, 0, 0);
 
         //vTaskDelay(pdMS_TO_TICKS(90000)); // wait 90 seconds
-    //}
-}
-
-void sendMessage(void *pvParameters){
-    esp_mqtt_client_handle_t client = *((esp_mqtt_client_handle_t *)pvParameters);
-    // create topic variable
-    char topic[128];
-    char medic[128];
-
-    // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
-    sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
-
-    sprintf(medic, "field1=%.3f", tempera[0]);
-
-    // Using FreeRTOS task management, forever loop, and send state to the topic
-    /*for (;;)
-    {
-        // You may change or update the state data that's being reported to Losant here:
-        esp_mqtt_client_publish(client, topic, "field1=18", 0, 0, 0);
-
-        vTaskDelay(pdMS_TO_TICKS(90000)); // wait 45 seconds
-    }*/
+    //}*/
 }
 
 void app_main(void)
@@ -345,14 +442,23 @@ void app_main(void)
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
+
+    xQueueSensorInfo = xQueueCreate(10, sizeof(struct Salvavidas));
+    xQueueMedBruta = xQueueCreate(10, sizeof(int32_t));
+
     ESP_ERROR_CHECK(example_connect());
 
-    //OneWireOp();
-    while (1)
-    {
-        mqtt_app_start();
-        vTaskDelay(pdMS_TO_TICKS(90000));
-    }
+    mqtt_app_start();
+
+    OneWireOp();
+
+    vTaskStartScheduler();
+
+    //while (1)
+    //{
+    //    mqtt_app_start();
+    //    vTaskDelay(pdMS_TO_TICKS(90000));
+    //}
     
 
     
