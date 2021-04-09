@@ -107,6 +107,7 @@ typedef struct Salvavidas
     DS18B20_Info * orb[MAX_DEVICES];
 };
 
+QueueHandle_t xQueueBIOTSK;
 QueueHandle_t xQueueSensorInfo;
 QueueHandle_t xQueueMedBruta;
 
@@ -284,11 +285,11 @@ static void OneWireOp(void){
 #endif
 
     salvador.cara = owb;
-    struct Salvavidas *prttask = &salvador;
+    //struct Salvavidas *prttask = &salvador;
 
     
 
-    xTaskCreate(LeituraDS18B20, "DS18B20L", 1000, (void*) prttask, 1, NULL);
+    //xTaskCreate(LeituraDS18B20, "DS18B20L", 1000, (void*) prttask, 1, NULL);
     xQueueSend(xQueueSensorInfo, (void*) &salvador, pdMS_TO_TICKS(5000) );
 
     /*// Read temperatures more efficiently by starting conversions on all devices at the same time
@@ -401,8 +402,9 @@ static void mqtt_app_start(void)
     esp_mqtt_client_start(client);
     //char topic[128];
     //char medic[128];
+    xQueueSend(xQueueBIOTSK, (void*) &client, pdMS_TO_TICKS(5000) );
 
-    xTaskCreate(sendMessage, "Mqttmssg", 3000, (void*)client, 2, NULL);
+    //xTaskCreate(sendMessage, "Mqttmssg", 3000, (void*)client, 2, NULL);
 
     /*/ Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
@@ -442,23 +444,26 @@ void app_main(void)
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
+    esp_mqtt_client_handle_t OfTsk2;
 
     xQueueSensorInfo = xQueueCreate(10, sizeof(struct Salvavidas));
     xQueueMedBruta = xQueueCreate(10, sizeof(int32_t));
-
+    xQueueBIOTSK = xQueueCreate(10, sizeof(OfTsk2));
+        
     ESP_ERROR_CHECK(example_connect());
 
+    OneWireOp();
     mqtt_app_start();
 
-    OneWireOp();
-
+    xQueueReceive(xQueueBIOTSK, &OfTsk2, 5000);
+    xTaskCreate(LeituraDS18B20, "DS18B20L", 1000, NULL, 1, NULL);
+    xTaskCreate(sendMessage, "Mqttmssg", 3000, (void*)OfTsk2, 2, NULL);
     vTaskStartScheduler();
 
-    //while (1)
-    //{
-    //    mqtt_app_start();
-    //    vTaskDelay(pdMS_TO_TICKS(90000));
-    //}
+    while (1)
+    {
+
+    }
     
 
     
