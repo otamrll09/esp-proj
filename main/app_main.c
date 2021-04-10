@@ -43,8 +43,6 @@
 
 static const char *TAG = "MQTT_EXAMPLE";
 
-float tempera [4] = { 0 };
-
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
     esp_mqtt_client_handle_t client = event->client;
@@ -100,12 +98,12 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     mqtt_event_handler_cb(event_data);
 }
 
-typedef struct Salvavidas
+struct Salvavidas
 {
     OneWireBus * cara;
     int disp_loc;
     DS18B20_Info * orb[MAX_DEVICES];
-};
+} alvador;
 
 QueueHandle_t xQueueBIOTSK;
 QueueHandle_t xQueueSensorInfo;
@@ -113,6 +111,7 @@ QueueHandle_t xQueueMedBruta;
 
 void LeituraDS18B20(void * pvParameters)
 {
+    printf("\nTASK SENSOR CONFIG..\n");
     
     int num_devices2;
     DS18B20_Info * bota[MAX_DEVICES] = {0};
@@ -181,7 +180,7 @@ static void OneWireOp(void){
     // Override global log level
     esp_log_level_set("*", ESP_LOG_INFO);
 
-    struct Salvavidas salvador;
+    struct Salvavidas *salvador;
 
     // To debug, use 'make menuconfig' to set default Log level to DEBUG, then uncomment:
     //esp_log_level_set("owb", ESP_LOG_DEBUG);
@@ -214,7 +213,7 @@ static void OneWireOp(void){
     }
     printf("Found %d device%s\n", num_devices, num_devices == 1 ? "" : "s");
 
-    salvador.disp_loc = num_devices;
+    salvador->disp_loc = num_devices;
 
     // In this example, if a single device is present, then the ROM code is probably
     // not very interesting, so just print it out. If there are multiple devices,
@@ -240,7 +239,7 @@ static void OneWireOp(void){
     {
         DS18B20_Info * ds18b20_info = ds18b20_malloc();  // heap allocation
         devices[i] = ds18b20_info;
-        salvador.orb[i] = devices[i];
+        salvador->orb[i] = devices[i];
 
         if (num_devices == 1)
         {
@@ -268,15 +267,15 @@ static void OneWireOp(void){
 //    }
 
     // Check for parasitic-powered devices
-    bool parasitic_power = false;
+    /*bool parasitic_power = false;
     ds18b20_check_for_parasite_power(owb, &parasitic_power);
     if (parasitic_power) {
         printf("Parasitic-powered devices detected");
-    }
+    }*/
 
     // In parasitic-power mode, devices cannot indicate when conversions are complete,
     // so waiting for a temperature conversion must be done by waiting a prescribed duration
-    owb_use_parasitic_power(owb, parasitic_power);
+    //owb_use_parasitic_power(owb, parasitic_power);
 
 #ifdef CONFIG_ENABLE_STRONG_PULLUP_GPIO
     // An external pull-up circuit is used to supply extra current to OneWireBus devices
@@ -284,10 +283,10 @@ static void OneWireOp(void){
     owb_use_strong_pullup_gpio(owb, CONFIG_STRONG_PULLUP_GPIO);
 #endif
 
-    salvador.cara = owb;
+    salvador->cara = owb;
     //struct Salvavidas *prttask = &salvador;
 
-    
+    salvador = &alvador;
 
     //xTaskCreate(LeituraDS18B20, "DS18B20L", 1000, (void*) prttask, 1, NULL);
     xQueueSend(xQueueSensorInfo, (void*) &salvador, pdMS_TO_TICKS(5000) );
@@ -342,12 +341,18 @@ static void OneWireOp(void){
 
 void sendMessage(void *pvParameters)
 {
-    esp_mqtt_client_handle_t client = *((esp_mqtt_client_handle_t *)pvParameters);
+    printf("\nTASK MQTT CONFIG..\n");
+    esp_mqtt_client_handle_t client3;
+    xQueueReceive(xQueueBIOTSK, &client3, 1000);
+    
     // create topic variable
     char topic[128];
     char medic[128];
     float brut[MAX_DEVICES] = {0};
     TickType_t last_wake_time = xTaskGetTickCount();
+
+    printf("teste");
+    fflush(stdin);
 
     // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
@@ -361,9 +366,9 @@ void sendMessage(void *pvParameters)
         xQueueReceive(xQueueMedBruta, &(brut),5000);
         sprintf(medic, "field1=%.3f", brut[0]);
         // You may change or update the state data that's being reported to Losant here:
-        esp_mqtt_client_publish(client, topic, medic, 0, 0, 0);
+        esp_mqtt_client_publish(client3, topic, medic, 0, 0, 0);
 
-        vTaskDelayUntil(&last_wake_time,pdMS_TO_TICKS(90000)); //sincronizando periodo de 90s
+        vTaskDelay(pdMS_TO_TICKS(90000)); //sincronizando periodo de 90s
     }
 }
 
@@ -396,30 +401,16 @@ static void mqtt_app_start(void)
         abort();
     }
 #endif /* CONFIG_BROKER_URL_FROM_STDIN */
-
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
-    //char topic[128];
-    //char medic[128];
-    xQueueSend(xQueueBIOTSK, (void*) &client, pdMS_TO_TICKS(5000) );
-
-    //xTaskCreate(sendMessage, "Mqttmssg", 3000, (void*)client, 2, NULL);
-
-    /*/ Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
-    sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
-    sprintf(medic, "field1=%.3f", tempera[1]);
-
-     Using FreeRTOS task management, forever loop, and send state to the topic
-    //for (;;)
-    //{
-        OneWireOp(); 
-        sprintf(medic, "field1=%.3f", tempera[0]);
-        // You may change or update the state data that's being reported to Losant here:
-        esp_mqtt_client_publish(client, topic, medic, 0, 0, 0);
-
-        //vTaskDelay(pdMS_TO_TICKS(90000)); // wait 90 seconds
-    //}*/
+    printf("Mqtt Marq");
+    xQueueBIOTSK = xQueueCreate(10, sizeof(client));
+    if(xQueueBIOTSK == 0){
+        for(;;){printf("\nERROR QUEUE BIOTSK CREATE\n");}
+    }
+   
+    xQueueSend(xQueueBIOTSK,(void *) &client, pdMS_TO_TICKS(5000) );
 }
 
 void app_main(void)
@@ -435,37 +426,52 @@ void app_main(void)
     esp_log_level_set("TRANSPORT_SSL", ESP_LOG_VERBOSE);
     esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
     esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
+    printf("\nWIFI START\n");
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+    
 
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
-    esp_mqtt_client_handle_t OfTsk2;
+    
+    printf("\nWIFI PASS\n");
 
-    xQueueSensorInfo = xQueueCreate(10, sizeof(struct Salvavidas));
-    xQueueMedBruta = xQueueCreate(10, sizeof(int32_t));
-    xQueueBIOTSK = xQueueCreate(10, sizeof(OfTsk2));
-        
-    ESP_ERROR_CHECK(example_connect());
+    xQueueSensorInfo = xQueueCreate(10, 2*sizeof(struct Salvavidas));
+    if(xQueueSensorInfo == 0){
+        for(;;){printf("\nERROR QUEUE SENSORINFO CREATE\n");}
+    }    
+    xQueueMedBruta = xQueueCreate(10, 2*sizeof(int32_t));
+    if(xQueueMedBruta == 0){
+        for(;;){printf("\nERROR QUEUE MedBruta CREATE\n");}   
+    }
+    /*xQueueBIOTSK = xQueueCreate(10, 2*sizeof(esp_mqtt_client_handle_t));
+    if(xQueueBIOTSK == 0){
+        for(;;){printf("\nERROR QUEUE BIOTSK CREATE\n");}
+    }*/
+    printf("\nQUEUE PASS\n");    
+    
 
     OneWireOp();
+    printf("\nOWB PASS\n");   
     mqtt_app_start();
+    printf("\nMQTTE PASS\n");  
 
-    xQueueReceive(xQueueBIOTSK, &OfTsk2, 5000);
+
+    printf("\nTASK CONFIG..\n");
     xTaskCreate(LeituraDS18B20, "DS18B20L", 1000, NULL, 1, NULL);
-    xTaskCreate(sendMessage, "Mqttmssg", 3000, (void*)OfTsk2, 2, NULL);
+    xTaskCreate(sendMessage, "Mqttmssg", 3000, NULL, 2, NULL);
     vTaskStartScheduler();
+    printf("\nTASK PASS\n");
+    ESP_ERROR_CHECK(example_connect());
 
     while (1)
     {
 
     }
-    
-
-    
+      
     //sendMessage();
 }

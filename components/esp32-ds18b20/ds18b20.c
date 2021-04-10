@@ -335,7 +335,7 @@ static bool _write_scratchpad(const DS18B20_Info * ds18b20_info, const Scratchpa
 
 DS18B20_Info * ds18b20_malloc(void)
 {
-    DS18B20_Info * ds18b20_info = malloc(sizeof(*ds18b20_info));
+    DS18B20_Info * ds18b20_info = pvPortMalloc(sizeof(*ds18b20_info));
     if (ds18b20_info != NULL)
     {
         memset(ds18b20_info, 0, sizeof(*ds18b20_info));

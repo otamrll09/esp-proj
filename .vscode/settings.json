@@ -2,6 +2,8 @@
     "files.associations": {
         "esp_wifi.h": "c",
         "esp_wifi_types.h": "c",
-        "ds18b20.h": "c"
+        "ds18b20.h": "c",
+        "freertos.h": "c",
+        "portable.h": "c"
     }
 }
