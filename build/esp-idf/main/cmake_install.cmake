@@ -1,4 +1,4 @@
-# Install script for directory: C:/esp/esp-idf/Projetos/tcp/main
+# Install script for directory: C:/esp/esp-idf/Projetos/esp-proj/main
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

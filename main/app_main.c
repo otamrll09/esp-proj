@@ -32,7 +32,6 @@
 
 static const char *TAG = "MQTT_EXAMPLE";
 
-
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
     esp_mqtt_client_handle_t client = event->client;
@@ -88,6 +87,24 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     mqtt_event_handler_cb(event_data);
 }
 
+void sendMessage(void *pvParameters){
+    esp_mqtt_client_handle_t client5 = *((esp_mqtt_client_handle_t *)pvParameters);
+    // create topic variable
+    char topic[128];
+
+    // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
+    sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
+
+    // Using FreeRTOS task management, forever loop, and send state to the topic
+    for (;;)
+    {
+        // You may change or update the state data that's being reported to Losant here:
+        esp_mqtt_client_publish(client5, topic, "field1=18", 0, 0, 0);
+
+        vTaskDelay(pdMS_TO_TICKS(90000)); // wait 45 seconds
+    }
+}
+
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
@@ -121,7 +138,10 @@ static void mqtt_app_start(void)
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
-    char topic[128];
+
+    xTaskCreate(sendMessage,"Mqtt Completo", 4096, &client, 2,NULL); 
+
+    /*char topic[128];
 
     // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
@@ -133,25 +153,7 @@ static void mqtt_app_start(void)
         esp_mqtt_client_publish(client, topic, "field1=18", 0, 0, 0);
 
         vTaskDelay(pdMS_TO_TICKS(90000)); // wait 30 seconds
-    }
-}
-
-void sendMessage(void *pvParameters){
-    esp_mqtt_client_handle_t client = *((esp_mqtt_client_handle_t *)pvParameters);
-    // create topic variable
-    char topic[128];
-
-    // Set the topic varible to be a losant state topic "losant/DEVICE_ID/state"
-    sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
-
-    // Using FreeRTOS task management, forever loop, and send state to the topic
-    for (;;)
-    {
-        // You may change or update the state data that's being reported to Losant here:
-        esp_mqtt_client_publish(client, topic, "field1=18", 0, 0, 0);
-
-        vTaskDelay(pdMS_TO_TICKS(45000)); // wait 45 seconds
-    }
+    }*/
 }
 
 void app_main(void)
@@ -179,5 +181,16 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
 
     mqtt_app_start();
-    //sendMessage(CONFIG_BROKER_URL);
+    //TaskHandle_t xHandleTSK1 = NULL;
+    //xTaskCreate(sendMessage,"Mqtt Completo", 2048, NULL, 2, xHandleTSK1); 
+    
+    /*if( xHandleTSK1 != NULL )
+    {
+       vTaskDelete( xHandleTSK1 );
+       printf("Task DELETED");
+    }*/
+
+    //vTaskStartScheduler();
+    
+        //sendMessage(CONFIG_BROKER_URL);
 }
