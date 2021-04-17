@@ -98,18 +98,96 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     mqtt_event_handler_cb(event_data);
 }
 
-struct StSensor
+/*struct StSensor
 {
     OneWireBus OwBConfig;
     int disp_loc;
     DS18B20_Info * orb[MAX_DEVICES];
-} TskLT;
+} TskLT;*/
 
 //static struct StSensor *SaveData;
 
 QueueHandle_t xQueueBIOTSK;
-QueueHandle_t xQueueSensorInfo;
+//QueueHandle_t xQueueSensorInfo;
 QueueHandle_t xQueueMedBruta;
+QueueHandle_t xQueueTProcess;
+TaskHandle_t ProcTemp = NULL;
+TaskHandle_t DSTempGet = NULL;   
+
+static void mqtt_app_start(void)
+{
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .uri = CONFIG_BROKER_URL,
+    };
+#if CONFIG_BROKER_URL_FROM_STDIN
+    char line[128];
+
+    if (strcmp(mqtt_cfg.uri, "FROM_STDIN") == 0) {
+        int count = 0;
+        printf("Please enter url of mqtt broker\n");
+        while (count < 128) {
+            int c = fgetc(stdin);
+            if (c == '\n') {
+                line[count] = '\0';
+                break;
+            } else if (c > 0 && c < 127) {
+                line[count] = c;
+                ++count;
+            }
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        }
+        mqtt_cfg.uri = line;
+        printf("Broker url: %s\n", line);
+    } else {
+        ESP_LOGE(TAG, "Configuration mismatch: wrong broker url");
+        abort();
+    }
+#endif /* CONFIG_BROKER_URL_FROM_STDIN */
+    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
+    esp_mqtt_client_start(client);
+    printf("Mqtt Marq");
+    xQueueBIOTSK = xQueueCreate(10, sizeof(client));
+    if(xQueueBIOTSK == 0){
+        for(;;){printf("\nERROR QUEUE BIOTSK CREATE\n");}
+    }
+   
+    xQueueSend(xQueueBIOTSK,(void *) &client, pdMS_TO_TICKS(5000) );
+}
+
+void Processamento(void * pvParameters)
+{
+    float procT[MAX_DEVICES];
+    float passT[MAX_DEVICES];
+    //int frt = 0;
+    unsigned int rept = 0;
+    while (1)
+    {
+        /* code */
+        rept = uxQueueMessagesWaiting(xQueueMedBruta);
+        //if(frt == 0){
+        //    frt = 1;
+        //}
+        //else
+        //{
+            /* code */
+            if(rept <= 10){
+            //vTaskSuspend(Processamento);
+            }
+            else{
+                procT[0] = 0;            
+                for (int i = 0; i < rept; i++)
+                {
+                    /* code */
+                    xQueueReceive(xQueueMedBruta, &(passT),105000);
+                    procT[0] = passT[0] + procT[0];
+                }
+                procT[0] = procT[0]/rept;
+                xQueueSend(xQueueTProcess,(void *) &procT, pdMS_TO_TICKS(105000));                    
+            }
+        //}            
+    }
+}
 
 static void LeituraDS18B20(void * pvParameters)
 {
@@ -245,6 +323,7 @@ static void LeituraDS18B20(void * pvParameters)
         // Read temperatures more efficiently by starting conversions on all devices at the same time
         int errors_count[MAX_DEVICES] = {0};
         int sample_count = 0;
+        unsigned int testQ = 0;
         //TickType_t last_time;
         if (num_devices > 0)
         {
@@ -280,11 +359,26 @@ static void LeituraDS18B20(void * pvParameters)
 
                     printf("  %d: %.1f    %d errors\n", i, readings[i], errors_count[i]);
                     printf("[APP] Free memory: %d bytes  Last Tick: %d \n", esp_get_free_heap_size(),xTaskGetTickCount());
+                    printf("\nT-1\n");
                     xQueueSendToFront(xQueueMedBruta, (void*) &readings[0], pdMS_TO_TICKS(105000) );
+                    printf("\nT0\n");
                     //xQueueOverwrite(xQueueMedBruta, (void*) &readings[0]);
+                    //vTaskResume(Processamento);
                 }
-
-                vTaskDelay(pdMS_TO_TICKS(10000)); //10seg
+                printf("\nT1\n");
+                testQ = uxQueueMessagesWaiting(xQueueMedBruta);
+                printf("\nT1.5\n");
+                if (testQ >= 60)
+                {
+                    vTaskResume(ProcTemp);
+                }
+                else
+                {
+                    /* code */
+                    vTaskSuspend(ProcTemp);
+                }
+                printf("\nT2\n");           
+                vTaskDelay(pdMS_TO_TICKS(1000)); //1 seg
             }
         }
         else
@@ -316,8 +410,11 @@ void sendMessage(void *pvParameters)
     
     // create topic variable
     char topic[128];
+    unsigned int mda= 1;
     char medic[128];
     float brut[MAX_DEVICES] = {0};
+    float mdabrut;
+    int uptem;
     TickType_t last_wake_time = xTaskGetTickCount();
 
     printf("teste");
@@ -326,55 +423,31 @@ void sendMessage(void *pvParameters)
     sprintf(topic, "channels/1348183/publish/I22SRI0GXR0L844Z");
     //sprintf(medic, "field1=%.3f", brut[0]);
     // Using FreeRTOS task management, forever loop, and send state to the topic
+
     for (;;)
     {
         vTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(90000)); //sincronizando periodo de 90s
-        xQueueReceive(xQueueMedBruta, &(brut),105000);
-        sprintf(medic, "field1=%.3f", brut[0]);
-        // You may change or update the state data that's being reported to Losant here:
-        esp_mqtt_client_publish(client3, topic, medic, 0, 0, 0);       
-    }
-}
-
-static void mqtt_app_start(void)
-{
-    esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = CONFIG_BROKER_URL,
-    };
-#if CONFIG_BROKER_URL_FROM_STDIN
-    char line[128];
-
-    if (strcmp(mqtt_cfg.uri, "FROM_STDIN") == 0) {
-        int count = 0;
-        printf("Please enter url of mqtt broker\n");
-        while (count < 128) {
-            int c = fgetc(stdin);
-            if (c == '\n') {
-                line[count] = '\0';
-                break;
-            } else if (c > 0 && c < 127) {
-                line[count] = c;
-                ++count;
-            }
-            vTaskDelay(10 / portTICK_PERIOD_MS);
+        mda = uxQueueMessagesWaiting(xQueueTProcess);
+        if(mda == 0){
+            /* code */
         }
-        mqtt_cfg.uri = line;
-        printf("Broker url: %s\n", line);
-    } else {
-        ESP_LOGE(TAG, "Configuration mismatch: wrong broker url");
-        abort();
+        else
+        {
+            mdabrut = 0;
+            /* code */
+            for (int i = 0; i < mda; i++)
+            {
+                /* code */
+                xQueueReceive(xQueueTProcess, &(brut),105000);
+                mdabrut = brut[0] + mdabrut;
+            }
+            uptem = xTaskGetTickCount()/1000;
+            mdabrut = mdabrut/mda;
+            sprintf(medic, "field1=%.3f&field2=%d&field3=%d", mdabrut, esp_get_free_heap_size(), uptem);
+            // You may change or update the state data that's being reported to Losant here:
+            esp_mqtt_client_publish(client3, topic, medic, 0, 0, 0);
+        }                      
     }
-#endif /* CONFIG_BROKER_URL_FROM_STDIN */
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
-    esp_mqtt_client_start(client);
-    printf("Mqtt Marq");
-    xQueueBIOTSK = xQueueCreate(10, sizeof(client));
-    if(xQueueBIOTSK == 0){
-        for(;;){printf("\nERROR QUEUE BIOTSK CREATE\n");}
-    }
-   
-    xQueueSend(xQueueBIOTSK,(void *) &client, pdMS_TO_TICKS(5000) );
 }
 
 void app_main(void)
@@ -405,37 +478,35 @@ void app_main(void)
 
     printf("\nWIFI PASS\n");
 
-    xQueueSensorInfo = xQueueCreate(10, 2*sizeof(struct StSensor));
+    /*xQueueSensorInfo = xQueueCreate(10, 2*sizeof(struct StSensor));
     if(xQueueSensorInfo == 0){
         for(;;){printf("\nERROR QUEUE SENSORINFO CREATE\n");}
-    }    
-    xQueueMedBruta = xQueueCreate(10, 2*sizeof(int32_t));
+    }*/
+    xQueueMedBruta = xQueueCreate(100, 2*sizeof(int32_t));
     if(xQueueMedBruta == 0){
         for(;;){printf("\nERROR QUEUE MedBruta CREATE\n");}   
     }
-    /*xQueueBIOTSK = xQueueCreate(10, 2*sizeof(esp_mqtt_client_handle_t));
-    if(xQueueBIOTSK == 0){
-        for(;;){printf("\nERROR QUEUE BIOTSK CREATE\n");}
-    }*/
+    xQueueTProcess = xQueueCreate(100, 2*sizeof(int32_t));
+    if(xQueueTProcess == 0){
+        for(;;){printf("\nERROR QUEUE T PROCESS CREATE\n");}
+    }
     printf("\nQUEUE PASS\n");    
-    
-
-    //OneWireOp();
-    printf("\nOWB PASS\n");   
+       
     mqtt_app_start();
-    printf("\nMQTTE PASS\n");  
-
-
+    printf("\nMQTTE PASS\n");
+    
     printf("\nTASK CONFIG..\n");
-    xTaskCreate(LeituraDS18B20, "DS18B20L", 16000, NULL, 1, NULL);
+    xTaskCreate(LeituraDS18B20, "DS18B20L", 16000, NULL, 1, &DSTempGet);
+    printf("\nTASK DS18B20L..\n");
+    xTaskCreate(Processamento, "ProcTemp", 16000, NULL, 1, &ProcTemp);
+    printf("\nTASK ProcTemp..\n");
     xTaskCreate(sendMessage, "Mqttmssg", 3000, NULL, 2, NULL);
-    //vTaskStartScheduler();
+    printf("\nTASK Mqttmssg..\n");   
+    //vTaskStartScheduler(); // NUNCA USAR COM ESP..
     printf("\nTASK PASS\n");
     
     while (1)
     {
-        vTaskDelay(pdMS_TO_TICKS(100)); //100 ms
+        vTaskDelay(pdMS_TO_TICKS(100)); //100 ms Evitar atuação do wtd..
     }
-      
-    //sendMessage();
 }
